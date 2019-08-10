@@ -47,6 +47,7 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
     protected void doStart() throws Exception {
         super.doStart();
         String cacheType = configuration().getCacheType();
+        LOGGER.info("Cache type set: {}", configuration().getCacheType());
         if (isEhcache(cacheType)) {
         	Configuration configuration = new Configuration();
             configuration.setName(configuration().getName());
@@ -93,10 +94,10 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
     }
     
     private boolean isEhcache (String cacheType) {
-    	return cacheType == "ehcache";
+    	return "ehcache".equals(cacheType);
     }
     
     private boolean isRediscache (String cacheType) {
-    	return cacheType == "redis";
+    	return "redis".equals(cacheType);
     }
 }

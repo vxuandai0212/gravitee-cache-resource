@@ -15,12 +15,16 @@
  */
 package io.gravitee.resource.cache.rediscache;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.gravitee.resource.cache.Cache;
 import io.gravitee.resource.cache.Element;
 
 public class RedisCacheDelegate implements Cache {
 
     private final org.springframework.cache.Cache rediscache;
+    private final Logger LOGGER = LoggerFactory.getLogger(RedisCacheDelegate.class);
 
     public RedisCacheDelegate(org.springframework.cache.Cache rediscache) {
         this.rediscache = rediscache;
@@ -38,11 +42,13 @@ public class RedisCacheDelegate implements Cache {
 
     @Override
     public Element get(Object key) {
+    	LOGGER.info("The element key: " + key + " is: " + rediscache.get(key));
         return (Element) rediscache.get(key);
     }
 
     @Override
     public void put(Element element) {
+    	LOGGER.info("Put element key: " + element.key().toString() + " is: " + element);
     	rediscache.put(element.key().toString(), element.value());
     }
 
