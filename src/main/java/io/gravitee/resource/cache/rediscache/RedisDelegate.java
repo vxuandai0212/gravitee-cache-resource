@@ -18,53 +18,53 @@ package io.gravitee.resource.cache.rediscache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache.ValueWrapper;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import io.gravitee.resource.cache.Cache;
 import io.gravitee.resource.cache.Element;
+import io.gravitee.resource.cache.rediscache.RedisElement;
 
-public class RedisCacheDelegate implements Cache {
+public class RedisDelegate implements Cache {
 
-    private final org.springframework.cache.Cache rediscache;
-    private final Logger LOGGER = LoggerFactory.getLogger(RedisCacheDelegate.class);
+    private final RedisTemplate<String,Element> redisTemplate;
+    private final Logger LOGGER = LoggerFactory.getLogger(RedisDelegate.class);
+    private static String REDIS_KEY = "Redis";
 
-    public RedisCacheDelegate(org.springframework.cache.Cache rediscache) {
-        this.rediscache = rediscache;
+    public RedisDelegate(RedisTemplate<String,Element> redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
     public String getName() {
-        return rediscache.getName();
+        return "my-redis";
     }
 
     @Override
     public Object getNativeCache() {
-        return rediscache;
+        return this.redisTemplate;
     }
 
     @Override
     public Element get(Object key) {
-    	ValueWrapper element = rediscache.get(key);
-    	LOGGER.info("The element key: " + key + " is: " + rediscache.get(key));
-    	return (element == null) ? null : (Element) element.get();
+    	return (Element) this.redisTemplate.opsForHash().get(REDIS_KEY, key);
     }
 
     @Override
     public void put(Element element) {
-    	LOGGER.info("Put element key: " + element.key().toString() + " is: " + element);
-    	rediscache.put(element.key().toString(), element.value());
+    	this.redisTemplate.opsForHash().put(REDIS_KEY, element.key(), element);
     }
 
     @Override
     public void evict(Object key) {
-    	rediscache.evict(key);
+    	this.redisTemplate.opsForHash().delete(REDIS_KEY, key);  
     }
 
     @Override
     public void clear() {
-    	rediscache.clear();
-    }
-    
-    public String toString() {
-    	return "Redis cache name " + rediscache.getName();
+    	redisTemplate.execute((RedisCallback<Object>) connection -> {
+			connection.flushDb();
+			return null;
+		});
     }
 }

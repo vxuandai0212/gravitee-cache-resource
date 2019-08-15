@@ -61,4 +61,8 @@ public class EhCacheDelegate implements Cache {
     public void clear() {
         ehcache.removeAll();
     }
+    
+    public String toString() {
+    	return "Redis cache name " + ehcache.getName();
+    }
 }

@@ -21,15 +21,20 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import io.gravitee.resource.api.AbstractConfigurableResource;
 import io.gravitee.resource.cache.configuration.CacheResourceConfiguration;
+import io.gravitee.resource.cache.configuration.RedisConf;
 import io.gravitee.resource.cache.configuration.RedisConfiguration;
 import io.gravitee.resource.cache.ehcache.EhCacheDelegate;
 import io.gravitee.resource.cache.rediscache.RedisCacheDelegate;
+import io.gravitee.resource.cache.rediscache.RedisDelegate;
+import io.gravitee.resource.cache.Element;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.config.Configuration;
+import redis.clients.jedis.Jedis;
 
 /**
  * @author David BRASSELY (david at gravitee.io)
@@ -49,6 +54,7 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
         String cacheType = configuration().getCacheType();
         LOGGER.info("Cache type set: {}", configuration().getCacheType());
         if (isEhcache(cacheType)) {
+        	LOGGER.info("deligate eh cache");
         	Configuration configuration = new Configuration();
             configuration.setName(configuration().getName());
             cacheManager = new CacheManager(configuration);
@@ -66,21 +72,30 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
             cacheManager.addCache(ehCache);
 
         } else if (isRediscache(cacheType)) {
-        	Set cacheSet = new HashSet();
-        	cacheSet.add(configuration().getName());
+        	LOGGER.info("deligate redis cache");
+//        	Set cacheSet = new HashSet();
+//        	cacheSet.add(configuration().getName());
+//        	
+//        	long ttl = configuration().getTimeToLiveSeconds();
+//        	
+//        	RedisConfiguration redisConfig = new RedisConfiguration();
+//        	RedisCacheManager redisCacheManager = redisConfig.cacheManager(cacheSet, ttl);
+//        	org.springframework.cache.Cache redisCache = redisCacheManager.getCache(configuration().getName());
+//        	cache = new RedisCacheDelegate(redisCache);
         	
-        	long ttl = configuration().getTimeToLiveSeconds();
-        	
-        	RedisConfiguration redisConfig = new RedisConfiguration();
-        	RedisCacheManager redisCacheManager = redisConfig.cacheManager(cacheSet, ttl);
-        	org.springframework.cache.Cache redisCache = redisCacheManager.getCache(configuration().getName());
-        	cache = new RedisCacheDelegate(redisCache);
+        	//Connecting to Redis server on localhost 
+        	RedisConf rf = new RedisConf();
+    		RedisTemplate<String, Element> redisTemplate = rf.redisTemplate();
+    		redisTemplate.getConnectionFactory().getConnection().ping();
+            
+            cache = new RedisDelegate(redisTemplate);
         }
         
     }
 
     @Override
     protected void doStop() throws Exception {
+    	LOGGER.info("do stop");
         super.doStop();
 
         if (cacheManager != null) {
@@ -90,6 +105,7 @@ public class CacheResource extends AbstractConfigurableResource<CacheResourceCon
     }
 
     public Cache getCache() {
+    	LOGGER.info("Get cache {}", this.cache.toString());
         return this.cache;
     }
     
